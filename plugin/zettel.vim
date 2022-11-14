@@ -62,11 +62,6 @@ os.remove(zettel_path)
 EOF
 endfunction
 
-function! s:search_zettels(zettel)
-python3 << EOF
-EOF
-endfunction
-
 function! s:search_zettels()
     let command = 'ag --smart-case --unrestricted --nogroup -- %s ' .. g:zettel_dir
     let initial_command = printf(command, '.')
