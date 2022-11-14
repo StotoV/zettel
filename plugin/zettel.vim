@@ -27,6 +27,7 @@ command! -nargs=1 DeleteZettel call s:delete_zettel(<f-args>)
 command! -nargs=0 SearchZettels call s:search_zettels()
 command! -nargs=0 InsertZettelLink call s:insert_zettel_link()
 command! -nargs=1 ProcessInsertLink call s:process_insert_link(<f-args>)
+command! -nargs=0 FollowLink call s:follow_link()
 
 function! s:create_zettel(title)
 python3 << EOF
@@ -78,7 +79,7 @@ endfunction
 function! s:process_insert_link(search_result)
 python3 << EOF
 zettel_path = vim.eval('a:search_result').split(':')[0].split('/')[-1]
-vim.command('exe "normal! a" . "[[{}]]"'.format(zettel_path))
+vim.command('exe "normal! a" . "[{}]"'.format(zettel_path))
 backlink = vim.current.buffer.name.split(':')[0].split('/')[-1]
 vim.command('call s:add_backlink("{}","{}")'.format(zettel_path, backlink))
 EOF
@@ -105,7 +106,30 @@ with open(os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel
             index = i
             break
 
-    if '[[{}]]'.format(vim.eval('a:backlink')) not in zettel[index:]:
-        f.writelines('[[{}]]\n'.format(vim.eval('a:backlink')))
+    if '[{}]'.format(vim.eval('a:backlink')) not in zettel[index:]:
+        f.writelines('[{}]\n'.format(vim.eval('a:backlink')))
+EOF
+endfunction
+
+function! s:follow_link()
+python3 << EOF
+import vim
+import os
+
+row, col = vim.current.window.cursor
+line = vim.current.buffer[row-1]
+low_point = high_point = None
+for i in range(col, -1, -1):
+    if line[i] == '[':
+        low_point = i+1
+for i in range(col, len(line)):
+    if line[i] == ']':
+        high_point = i
+
+if low_point is None or high_point is None:
+    raise ValueError('Invalid link')
+
+zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + line[low_point:high_point])
+vim.command('e {}'.format(zettel))
 EOF
 endfunction
