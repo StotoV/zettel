@@ -1,39 +1,63 @@
+if !has("python3")
+    echo "vim has to be compiled with +python3 to run this"
+    finish
+endif
+
 " Prevent loading multiple times
 if exists("g:loaded_zettel_plugin")
     finish
 endif
 let g:loaded_zettel_plugin = 1
 
+if !exists("g:zettel_dir")
+    let g:zettel_dir = '~/.zettel'
+endif
+
+if !exists("g:zettel_random_title_length")
+    let g:zettel_random_title_length = 5
+endif
+
 " Expose commands
-command! -nargs 1 CreateZettel call zettel#CreateZettel
+command! -nargs=1 CreateZettel call s:create_zettel(<f-args>)
+command! -nargs=1 DeleteZettel call s:delete_zettel(<f-args>)
 
-function! CreateZettel(title)
-    python << EOF
-        import vim
-        import string
-        import random
+function! s:create_zettel(title)
+python3 << EOF
+import vim
+import string
+import random
+import os
 
-        letters = string.ascii_lowercase
-        random_id = ''.join(random.choice(letters) for i in range(RANDOM_TITLE_LENGTH))
-        with open(vim.eval('&zettel_dir') + '/' + random_id + '_' + title, 'x') as zettel:
-            zettel.writelines(title)
-            zettel.writelines('-'*100)
-            zettel.writelines('')
-            zettel.writelines('')
-            zettel.writelines('-'*5 + ' External references ' + '-'*74)
-            zettel.writelines('')
-            zettel.writelines('-'*100)
-            zettel.writelines('*Date:*  ')
-            zettel.writelines('*Tags:*  ')
-            zettel.writelines('*Backlinks:*  ')
-    EOF
+letters = string.ascii_lowercase
+random_id = ''.join(random.choice(letters) for i in range(int(vim.eval('g:zettel_random_title_length'))))
+zettel_path = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + random_id + '_' + vim.eval('a:title'))
+with open(zettel_path, 'x') as zettel:
+    zettel.writelines(vim.eval('a:title') + '\n')
+    zettel.writelines('-'*100 + '\n')
+    zettel.writelines('\n')
+    zettel.writelines('\n')
+    zettel.writelines('-'*5 + ' External references ' + '-'*74 + '\n')
+    zettel.writelines('\n')
+    zettel.writelines('-'*100 + '\n')
+    zettel.writelines('*Date:*  ' + '\n')
+    zettel.writelines('*Tags:*  ' + '\n')
+    zettel.writelines('*Backlinks:*  ')
+
+vim.command('tabnew {}'.format(zettel_path))
+EOF
 endfunction
 
-function! DeleteZettel(zettel)
-    python << EOF
-        import vim
-        import os
+function! s:delete_zettel(zettel)
+python3 << EOF
+import vim
+import os
 
-        os.remove(vim.eval('&zettel_dir') + '/' + zettel)
-    EOF
+zettel_path = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel'))
+os.remove(zettel_path)
+EOF
+endfunction
+
+function! s:search_zettels(zettel)
+python3 << EOF
+EOF
 endfunction
