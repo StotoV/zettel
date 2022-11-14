@@ -17,9 +17,14 @@ if !exists("g:zettel_random_title_length")
     let g:zettel_random_title_length = 5
 endif
 
+if !exists("g:zettel_fzf_fullscreen")
+    let g:zettel_fzf_fullscreen = 0
+endif
+
 " Expose commands
 command! -nargs=1 CreateZettel call s:create_zettel(<f-args>)
 command! -nargs=1 DeleteZettel call s:delete_zettel(<f-args>)
+command! -nargs=0 SearchZettels call s:search_zettels()
 
 function! s:create_zettel(title)
 python3 << EOF
@@ -60,4 +65,12 @@ endfunction
 function! s:search_zettels(zettel)
 python3 << EOF
 EOF
+endfunction
+
+function! s:search_zettels()
+    let command = 'ag --smart-case --unrestricted --nogroup -- %s ' .. g:zettel_dir
+    let initial_command = printf(command, '.')
+    let reload_command = printf(command, '{q}')
+    let spec = {'options': ['--phony', '--bind', 'change:reload:'.reload_command]}
+    call fzf#vim#grep(initial_command, 0, fzf#vim#with_preview(spec), g:zettel_fzf_fullscreen)
 endfunction
