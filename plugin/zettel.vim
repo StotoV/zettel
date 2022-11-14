@@ -101,7 +101,7 @@ with open(os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel
     zettel = f.read().splitlines()
     index = 0
     for i, line in enumerate(zettel):
-        if line.startswith('Backlinks:'):
+        if line.startswith('----- Metadata'):
             index = i
             break
 
