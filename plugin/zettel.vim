@@ -1,6 +1,13 @@
-let g:zettel_dir = '~/.zettel'
+" Prevent loading multiple times
+if exists("g:loaded_zettel_plugin")
+    finish
+endif
+let g:loaded_zettel_plugin = 1
 
-function! CreateZettel
+" Expose commands
+command! -nargs 1 CreateZettel call zettel#CreateZettel
+
+function! CreateZettel(title)
     python << EOF
         import vim
         import string
@@ -20,4 +27,13 @@ function! CreateZettel
             zettel.writelines('*Tags:*  ')
             zettel.writelines('*Backlinks:*  ')
     EOF
+endfunction
 
+function! DeleteZettel(zettel)
+    python << EOF
+        import vim
+        import os
+
+        os.remove(vim.eval('&zettel_dir') + '/' + zettel)
+    EOF
+endfunction
