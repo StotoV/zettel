@@ -22,14 +22,15 @@ if !exists("g:zettel_fzf_fullscreen")
 endif
 
 " Expose commands
-command! -nargs=1 CreateZettel call s:create_zettel(<f-args>)
+command! -nargs=1 CreateZettel call s:create_zettel(<f-args>, 0)
+command! -nargs=1 CreateZettelInsertLink call s:create_zettel(<f-args>, 1)
 command! -nargs=1 DeleteZettel call s:delete_zettel(<f-args>)
 command! -nargs=0 SearchZettels call s:search_zettels()
 command! -nargs=0 InsertZettelLink call s:insert_zettel_link()
 command! -nargs=1 ProcessInsertLink call s:process_insert_link(<f-args>)
 command! -nargs=0 FollowLink call s:follow_link()
 
-function! s:create_zettel(title)
+function! s:create_zettel(title, insert_link)
 python3 << EOF
 import vim
 import string
@@ -53,6 +54,9 @@ with open(zettel_path, 'x') as zettel:
     zettel.writelines('Date: ' + str(datetime.now()) + '  \n')
     zettel.writelines('Tags:' + ' \n')
     zettel.writelines('Backlinks:\n')
+
+if vim.eval('a:insert_link'):
+    vim.command('exe "normal! a" . "[{}]"'.format(random_id + '_' + vim.eval('a:title')))
 
 vim.command('e {}'.format(zettel_path))
 EOF
