@@ -93,9 +93,9 @@ EOF
 endfunction
 
 function! s:insert_zettel_link()
-    let command = 'ag --smart-case  --no-heading %s ' .. g:zettel_dir
-    let initial_command = printf(command, '.')
-    let reload_command = printf(command, '{q}')
+    let command = s:current_file .. '/ag_builder' .. ' %s %s'
+    let initial_command = printf(command, '.', g:zettel_dir)
+    let reload_command = printf(command, '{q}', g:zettel_dir)
     let spec = {'sink': 'ProcessInsertLink', 'options': ['--bind', 'change:reload:'.reload_command]}
     call fzf#vim#grep(initial_command, 0, fzf#vim#with_preview(spec), g:zettel_fzf_fullscreen)
 endfunction
