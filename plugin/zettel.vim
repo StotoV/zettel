@@ -54,7 +54,7 @@ with open(zettel_path, 'x') as zettel:
     zettel.writelines('Tags:' + ' \n')
     zettel.writelines('Backlinks:\n')
 
-vim.command('tabnew {}'.format(zettel_path))
+vim.command('e {}'.format(zettel_path))
 EOF
 endfunction
 
