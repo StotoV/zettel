@@ -21,6 +21,8 @@ if !exists("g:zettel_fzf_fullscreen")
     let g:zettel_fzf_fullscreen = 0
 endif
 
+let s:current_file = expand('<sfile>:p:h')
+
 " Expose commands
 command! -nargs=1 CreateZettel call s:create_zettel(<f-args>, 0)
 command! -nargs=1 CreateZettelInsertLink call s:create_zettel(<f-args>, 1)
@@ -73,9 +75,10 @@ EOF
 endfunction
 
 function! s:search_zettels()
-    let command = 'ag --smart-case  --no-heading %s ' .. g:zettel_dir
-    let initial_command = printf(command, '.')
-    let reload_command = printf(command, '{q}')
+    let command = s:current_file .. '/ag_builder' .. ' %s %s'
+    let initial_command = printf(command, '.', g:zettel_dir)
+    let reload_command = printf(command, '{q}', g:zettel_dir)
+
     let spec = {'options': ['--phony', '--bind', 'change:reload:'.reload_command]}
     call fzf#vim#grep(initial_command, 0, fzf#vim#with_preview(spec), g:zettel_fzf_fullscreen)
 endfunction
