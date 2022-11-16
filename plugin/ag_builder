@@ -5,14 +5,15 @@ import os
 assert len(sys.argv) == 3
 
 query = sys.argv[1]
-zettel_dir = sys.argv[2]
+zettel_dir = os.path.expanduser(sys.argv[2])
 
 search_terms = query.split('&')
 command = 'ag -il \'{}\' {}'.format(search_terms[0], zettel_dir)
 for search_term in search_terms[1:]:
-    command += ' | xargs -d \'\n\' ag -il \'{}\''.format(search_term)
+    command += ' | xargs -d \'\\n\' ag -il \'{}\''.format(search_term)
 
-command += ' | xargs -d \'\n\' ag -i \'{}'.format(search_terms[0])
+command += ' | {{ cat; echo "{}/empty.zettel"; }} | xargs -d \'\\n\' ag -i \'{}' \
+           .format(zettel_dir, search_terms[0])
 for search_term in search_terms[1:]:
     command += '|{}'.format(search_term)
 command += '\''
