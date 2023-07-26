@@ -322,10 +322,9 @@ for i in range(col, len(line)):
     if line[i] == ']':
         high_point = i
 
-if low_point is None or high_point is None:
-    raise ValueError('Invalid link')
-
-zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + line[low_point:high_point])
-vim.command('e {}'.format(zettel))
+if low_point is not None and high_point is not None:
+    zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + line[low_point:high_point])
+    if os.path.isfile(zettel):
+        vim.command('e {}'.format(zettel))
 EOF
 endfunction
