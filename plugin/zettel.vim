@@ -138,7 +138,7 @@ def draw_graph(graph):
             'size': 6,
             'verticalalignment': 'top',
             'clip_on': True,
-            'color': (0.3,0.3,0.3)
+            'color': (0.5,0.5,0.5)
         },
         scale=(1,2),
         node_edge_width=0,
