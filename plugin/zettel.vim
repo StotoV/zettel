@@ -96,7 +96,6 @@ def build_graph():
         if os.path.getsize(note) > 0:
             note_data = extract_note_data(note)
 
-            # print(graph.nodes)
             if note_data['id'] in graph.nodes:
                 graph.nodes[note_data['id']]['label'] = note_data['title']
             else:
@@ -117,6 +116,7 @@ def build_graph():
 
 def draw_graph(graph):
     plt.rcParams['toolbar'] = 'None'
+    current_node = vim.eval("expand('%:t')")
 
     norm = matplotlib.colors.Normalize(
         vmin=min(nx.get_node_attributes(graph,"weight").values()),
@@ -125,7 +125,10 @@ def draw_graph(graph):
     color = matplotlib.cm.ScalarMappable(norm=norm, cmap=matplotlib.cm.plasma)
     node_colors = {}
     for node in graph.nodes().keys():
-        node_colors[node] = color.to_rgba(graph.nodes[node]['weight'])
+        if node == current_node:
+            node_colors[node] = (1,1,1)
+        else:
+            node_colors[node] = color.to_rgba(graph.nodes[node]['weight'])
 
     plot_instance = InteractiveGraph(
         graph,
