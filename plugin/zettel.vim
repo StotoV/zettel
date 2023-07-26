@@ -9,9 +9,8 @@ if exists("g:loaded_zettel_plugin")
 endif
 let g:loaded_zettel_plugin = 1
 
-if !exists("g:default_zettel_dir")
-    let g:default_zettel_dir = '~/.zettel'
-    let s:zettel_dir = '~/.zettel'
+if !exists("g:zettel_dir")
+    let g:zettel_dir = '~/.zettel'
 endif
 
 if !exists("g:zettel_random_title_length")
@@ -34,6 +33,7 @@ command! -nargs=1 DeleteZettel call s:delete_zettel(<f-args>)
 command! -nargs=0 SearchZettels call s:search_zettels()
 command! -nargs=0 InsertZettelLink call s:insert_zettel_link()
 command! -nargs=1 ProcessInsertLink call s:process_insert_link(<f-args>)
+command! -nargs=1 CreateZettelInsertLink call s:create_zettel_insert_link(<f-args>)
 command! -nargs=0 FollowLink call s:follow_link()
 command! -nargs=0 ZettelGraph call s:graph()
 command! -nargs=0 SetZDir call s:set_zettel_dir()
@@ -43,14 +43,16 @@ python3 << EOF
 import os
 from pathlib import Path
 
-path = os.getcwd()
-while path != '/':
-    for directory in os.listdir(path):
-        if directory == '.zettel':
-            zettel_path = os.path.join(path, '.zettel')
-            vim.command('let s:zettel_dir = "{}"'.format(zettel_path))
-            break
-    path = os.path.abspath(os.path.join(path, os.pardir))
+def set_path():
+    path = os.getcwd()
+    while path != '/':
+        for directory in os.listdir(path):
+            if directory == '.zettel':
+                zettel_path = os.path.join(path, '.zettel')
+                vim.command('let g:zettel_dir = "{}"'.format(zettel_path))
+                return
+        path = os.path.abspath(os.path.join(path, os.pardir))
+set_path()
 EOF
 endfunction
 
@@ -91,11 +93,12 @@ def extract_note_data(note_path):
 def build_graph():
     graph = nx.DiGraph()
 
-    notes = Path(os.path.expanduser(vim.eval('s:zettel_dir'))).glob('*'+vim.eval('g:zettel_extension'))
+    notes = Path(os.path.expanduser(vim.eval('g:zettel_dir'))).glob('*'+vim.eval('g:zettel_extension'))
     for note in notes:
         if os.path.getsize(note) > 0:
             note_data = extract_note_data(note)
 
+            # print(graph.nodes)
             if note_data['id'] in graph.nodes:
                 graph.nodes[note_data['id']]['label'] = note_data['title']
             else:
@@ -116,7 +119,6 @@ def build_graph():
 
 def draw_graph(graph):
     plt.rcParams['toolbar'] = 'None'
-    current_node = vim.eval("expand('%:t')")
 
     norm = matplotlib.colors.Normalize(
         vmin=min(nx.get_node_attributes(graph,"weight").values()),
@@ -125,10 +127,7 @@ def draw_graph(graph):
     color = matplotlib.cm.ScalarMappable(norm=norm, cmap=matplotlib.cm.plasma)
     node_colors = {}
     for node in graph.nodes().keys():
-        if node == current_node:
-            node_colors[node] = (1,1,1)
-        else:
-            node_colors[node] = color.to_rgba(graph.nodes[node]['weight'])
+        node_colors[node] = color.to_rgba(graph.nodes[node]['weight'])
 
     plot_instance = InteractiveGraph(
         graph,
@@ -177,7 +176,7 @@ def button_click(event, plot_instance):
         for node_id, node in plot_instance.node_artists.items():
             dist = ((x-node.xy[0])**2 + (y-node.xy[1])**2)**0.5
             if dist < node.radius:
-                zettel = os.path.expanduser(vim.eval('s:zettel_dir') + '/' + node_id)
+                zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + node_id)
                 vim.command('bd|e {}'.format(zettel))
                 plt.close()
 
@@ -205,7 +204,7 @@ main()
 EOF
 endfunction
 
-function! s:create_zettel(title)
+function! s:create_zettel(title, openNow=1)
     call s:set_zettel_dir()
 python3 << EOF
 import vim
@@ -216,7 +215,7 @@ from datetime import datetime
 
 letters = string.ascii_lowercase
 random_id = ''.join(random.choice(letters) for i in range(int(vim.eval('g:zettel_random_title_length'))))
-zettel_path = os.path.expanduser(vim.eval('s:zettel_dir') + '/' + \
+zettel_path = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + \
                                  random_id + '_' + vim.eval('a:title') + vim.eval('g:zettel_extension'))
 with open(zettel_path, 'x') as zettel:
     zettel.writelines('Title: ' + vim.eval('a:title') + '\n')
@@ -226,13 +225,21 @@ with open(zettel_path, 'x') as zettel:
     zettel.writelines('-'*5 + ' External references ' + '-'*74 + '\n')
     zettel.writelines('\n')
     zettel.writelines('-'*100 + '\n')
+    zettel.writelines('-'*5 + ' Metadata ' + '-'*84 + '\n')
     zettel.writelines('ID: ' + random_id + '_' + vim.eval('a:title') + '  \n')
     zettel.writelines('Date: ' + str(datetime.now()) + '  \n')
     zettel.writelines('Tags:' + ' \n')
     zettel.writelines('Backlinks:\n')
 
-vim.command('tabnew {}'.format(zettel_path))
+if vim.eval('a:openNow') == 1:
+    vim.command('tabnew {}'.format(zettel_path))
 EOF
+    return py3eval('zettel_path')
+endfunction
+
+function! s:create_zettel_insert_link(title)
+    let s:new_zettel_path = s:create_zettel(a:title, 1)
+    call s:process_insert_link(s:new_zettel_path)
 endfunction
 
 function! s:delete_zettel(zettel)
@@ -241,7 +248,7 @@ python3 << EOF
 import vim
 import os
 
-zettel_path = os.path.expanduser(vim.eval('s:zettel_dir') + '/' + vim.eval('a:zettel'))
+zettel_path = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel'))
 os.remove(zettel_path)
 EOF
 endfunction
@@ -249,8 +256,8 @@ endfunction
 function! s:search_zettels()
     call s:set_zettel_dir()
     let command = s:current_file .. '/ag_builder' .. ' %s %s'
-    let initial_command = printf(command, '.', s:zettel_dir)
-    let reload_command = printf(command, '{q}', s:zettel_dir)
+    let initial_command = printf(command, '.', g:zettel_dir)
+    let reload_command = printf(command, '{q}', g:zettel_dir)
 
     let spec = {'options': ['--phony', '--bind', 'change:reload:'.reload_command]}
     call fzf#vim#grep(initial_command, 0, fzf#vim#with_preview(spec), g:zettel_fzf_fullscreen)
@@ -269,8 +276,8 @@ endfunction
 function! s:insert_zettel_link()
     call s:set_zettel_dir()
     let command = s:current_file .. '/ag_builder' .. ' %s %s'
-    let initial_command = printf(command, '.', s:zettel_dir)
-    let reload_command = printf(command, '{q}', s:zettel_dir)
+    let initial_command = printf(command, '.', g:zettel_dir)
+    let reload_command = printf(command, '{q}', g:zettel_dir)
     let spec = {'sink': 'ProcessInsertLink', 'options': ['--bind', 'change:reload:'.reload_command]}
     call fzf#vim#grep(initial_command, 0, fzf#vim#with_preview(spec), g:zettel_fzf_fullscreen)
 endfunction
@@ -281,7 +288,7 @@ python3 << EOF
 import vim
 import os
 
-with open(os.path.expanduser(vim.eval('s:zettel_dir') + '/' + vim.eval('a:zettel')), 'a+') as f:
+with open(os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel')), 'a+') as f:
     zettel = f.read().splitlines()
     index = 0
     for i, line in enumerate(zettel):
@@ -313,7 +320,7 @@ for i in range(col, len(line)):
 if low_point is None or high_point is None:
     raise ValueError('Invalid link')
 
-zettel = os.path.expanduser(vim.eval('s:zettel_dir') + '/' + line[low_point:high_point])
+zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + line[low_point:high_point])
 vim.command('e {}'.format(zettel))
 EOF
 endfunction
