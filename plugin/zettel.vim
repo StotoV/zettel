@@ -223,14 +223,13 @@ random_id = ''.join(random.choice(letters) for i in range(int(vim.eval('g:zettel
 zettel_path = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + \
                                  random_id + '_' + vim.eval('a:title') + vim.eval('g:zettel_extension'))
 with open(zettel_path, 'x') as zettel:
-    zettel.writelines('Title: ' + vim.eval('a:title') + '\n')
+    zettel.writelines('# Title: ' + vim.eval('a:title') + '\n')
     zettel.writelines('-'*100 + '\n')
     zettel.writelines('\n')
     zettel.writelines('\n')
     zettel.writelines('-'*5 + ' External references ' + '-'*74 + '\n')
     zettel.writelines('\n')
-    zettel.writelines('-'*100 + '\n')
-    zettel.writelines('-'*5 + ' Metadata ' + '-'*84 + '\n')
+    zettel.writelines('-'*5 + ' Metadata ' + '-'*85 + '\n')
     zettel.writelines('ID: ' + random_id + '_' + vim.eval('a:title') + '  \n')
     zettel.writelines('Date: ' + str(datetime.now()) + '  \n')
     zettel.writelines('Tags:' + ' \n')
