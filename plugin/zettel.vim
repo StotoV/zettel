@@ -227,9 +227,9 @@ with open(zettel_path, 'x') as zettel:
     zettel.writelines('-'*100 + '\n')
     zettel.writelines('\n')
     zettel.writelines('\n')
-    zettel.writelines('-'*5 + ' External references ' + '-'*74 + '\n')
+    zettel.writelines('# ' + '-'*5 + ' External references ' + '-'*72 + '\n')
     zettel.writelines('\n')
-    zettel.writelines('-'*5 + ' Metadata ' + '-'*85 + '\n')
+    zettel.writelines('# ' + '-'*5 + ' Metadata ' + '-'*83 + '\n')
     zettel.writelines('ID: ' + random_id + '_' + vim.eval('a:title') + '  \n')
     zettel.writelines('Date: ' + str(datetime.now()) + '  \n')
     zettel.writelines('Tags:' + ' \n')
@@ -296,7 +296,7 @@ with open(os.path.expanduser(vim.eval('g:zettel_dir') + '/' + vim.eval('a:zettel
     zettel = f.read().splitlines()
     index = 0
     for i, line in enumerate(zettel):
-        if line.startswith('----- Metadata'):
+        if line.startswith('# ----- Metadata'):
             index = i
             break
 
