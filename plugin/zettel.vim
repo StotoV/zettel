@@ -227,8 +227,6 @@ with open(zettel_path, 'x') as zettel:
     zettel.writelines('-'*100 + '\n')
     zettel.writelines('\n')
     zettel.writelines('\n')
-    zettel.writelines('# ' + '-'*5 + ' External references ' + '-'*72 + '\n')
-    zettel.writelines('\n')
     zettel.writelines('# ' + '-'*5 + ' Metadata ' + '-'*83 + '\n')
     zettel.writelines('ID: ' + random_id + '_' + vim.eval('a:title') + '  \n')
     zettel.writelines('Date: ' + str(datetime.now()) + '  \n')
