@@ -72,7 +72,7 @@ from pathlib import Path
 
 def extract_note_data(note_path):
     with open(note_path, 'r+') as note:
-        note_title = next(note).replace('Title: ', '').strip()
+        note_title = next(note).replace('# Title: ', '').strip()
         note_id = ''
         note_tags = []
         note_links = []
