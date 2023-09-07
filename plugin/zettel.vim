@@ -152,8 +152,8 @@ def draw_graph(graph):
         edge_width=0.2,
         edge_color=(.5,.5,.5),
         edge_zorder=-1,
-        # edge_layout='straight',
-        edge_layout='curved',
+        edge_layout='straight',
+        # edge_layout='curved',
         # edge_layout='bundled',
         arrows=True,
     )
@@ -167,6 +167,9 @@ def draw_graph(graph):
     fig = plt.gcf()
     fig.set_size_inches(50, 5, forward=True)
     fig.set_facecolor((0.2,0.2,0.2))
+    print(fig.canvas.callbacks.callbacks['motion_notify_event'].values()[1])
+    fig.canvas.callbacks.callbacks.pop('motion_notify_event')
+    fig.canvas.mpl_connect('button_press_event', lambda event: plot_instance._on_motion(event))
     fig.canvas.mpl_connect('scroll_event', mousewheel_move)
     fig.canvas.mpl_connect('button_press_event', lambda event: button_click(event, plot_instance))
     pan_handler = panhandler(fig)
@@ -175,15 +178,82 @@ def draw_graph(graph):
     plt.show()
 
 def button_click(event, plot_instance):
-    if event.dblclick:
-        x = event.xdata
-        y = event.ydata
-        for node_id, node in plot_instance.node_artists.items():
-            dist = ((x-node.xy[0])**2 + (y-node.xy[1])**2)**0.5
-            if dist < node.radius:
-                zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + node_id)
-                vim.command('bd|e {}'.format(zettel))
-                plt.close()
+    if event.inaxes == plot_instance.ax:
+        selected_artist = None
+        for artist in plot_instance.emphasizeable_artists:
+            if artist.contains(event)[0]: # returns bool, {} for some reason
+                selected_artist = artist
+                key = plot_instance.artist_to_key[selected_artist]
+                break
+
+    # Open zettel
+    if event.dblclick and selected_artist:
+        zettel = os.path.expanduser(vim.eval('g:zettel_dir') + '/' + key)
+        vim.command('bd|e {}'.format(zettel))
+        plt.close()
+
+    # Highlight connections
+    else:
+        if selected_artist:
+            if key in plot_instance.mouseover_highlight_mapping:
+                emphasized_artists = []
+                for value in plot_instance.mouseover_highlight_mapping[key]:
+                    if value in plot_instance.node_label_artists:
+                        emphasized_artists.append(plot_instance.node_label_artists[value])
+
+                for artist in plot_instance.node_label_artists.values():
+                    if artist in emphasized_artists:
+                        artist.set_color((0.8,0.8,0.8))
+                        # artist.set_alpha(plot_instance._base_alpha[artist]/5)
+                    else:
+                        artist.set_color((0.2,0.2,0.2))
+
+                plot_instance.fig.canvas.draw_idle()
+        else:
+            for artist in plot_instance.node_label_artists.values():
+                artist.set_color((0.8,0.8,0.8))
+
+        # for artist in plot_instance.emphasizeable_artists:
+        #     if artist in plot_instance.deemphasized_artists:
+        #         key = plot_instance.artist_to_key[artist]
+        #         plot_instance.node_label_artists[key].set_alpha(plot_instance._base_alpha[artist]/5)
+                # artist.set_alpha(plot_instance._base_alpha[artist]/5)
+
+        # if event.inaxes == plot_instance.ax:
+        #
+        #     # determine if the cursor is on an artist
+        #     selected_artist = None
+        #     for artist in plot_instance.emphasizeable_artists:
+        #         if artist.contains(event)[0]: # returns bool, {} for some reason
+        #             selected_artist = artist
+        #             break
+        #
+        #     if selected_artist:
+        #         key = plot_instance.artist_to_key[artist]
+        #         if key in plot_instance.mouseover_highlight_mapping:
+        #             emphasized_artists = []
+        #             for value in plot_instance.mouseover_highlight_mapping[key]:
+        #                 if value in plot_instance.node_artists:
+        #                     emphasized_artists.append(plot_instance.node_artists[value])
+        #                 elif value in plot_instance.edge_artists:
+        #                     emphasized_artists.append(plot_instance.edge_artists[value])
+        #
+        #             for artist in plot_instance.emphasizeable_artists:
+        #                 if artist not in emphasized_artists:
+        #                     artist.set_alpha(plot_instance._base_alpha[artist]/5)
+        #                     plot_instance.deemphasized_artists.append(artist)
+        #             plot_instance.fig.canvas.draw_idle()
+        #
+        #                     # not on any artist
+        #     if selected_artist is None and plot_instance.deemphasized_artists:
+        #         for artist in plot_instance.deemphasized_artists:
+        #             try:
+        #                 artist.set_alpha(plot_instance._base_alpha[artist])
+        #             except KeyError:
+        #                 # This mitigates issue #66.
+        #                 pass
+        #         plot_instance.deemphasized_artists = []
+        #         plot_instance.fig.canvas.draw_idle()
 
 def mousewheel_move(event):
     ax=event.inaxes
